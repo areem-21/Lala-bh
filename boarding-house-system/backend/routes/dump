@@ -1,0 +1,96 @@
+const express = require("express");
+const router = express.Router();
+const db = require("../config/db");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer"); // for notifications
+
+// Admin middleware
+const verifyAdmin = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== "admin") return res.status(403).json({ message: "Forbidden" });
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+// GET all tenants with optional month filter
+router.get("/all", verifyAdmin, (req, res) => {
+  let query = `
+    SELECT t.id, t.full_name, t.email, t.phone, t.gender, t.address, t.emergency_contact,
+           r.room_number, r.type, r.rate, t.status, t.created_at
+    FROM tenants t
+    LEFT JOIN rooms r ON t.room_id = r.id
+  `;
+  const params = [];
+  if (req.query.month) {
+    query += ` WHERE MONTH(t.created_at) = ? `;
+    params.push(parseInt(req.query.month)); // 1=Jan, 12=Dec
+  }
+  query += ` ORDER BY t.created_at DESC `;
+
+  db.query(query, params, (err, results) => {
+    if (err) return res.status(500).json({ message: "Internal server error" });
+    res.json(results);
+  });
+});
+
+// Notify single tenant by email
+router.post("/notify/:id", verifyAdmin, async (req, res) => {
+  const tenantId = req.params.id;
+  const { subject, message } = req.body;
+
+  db.query("SELECT email FROM tenants WHERE id = ?", [tenantId], async (err, results) => {
+    if (err || results.length === 0) return res.status(404).json({ message: "Tenant not found" });
+
+    const email = results[0].email;
+    try {
+      await sendEmail(email, subject, message);
+      res.json({ message: "Notification sent" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Failed to send notification" });
+    }
+  });
+});
+
+// Notify all tenants
+router.post("/notify-all", verifyAdmin, async (req, res) => {
+  const { subject, message } = req.body;
+  db.query("SELECT email FROM tenants", async (err, results) => {
+    if (err) return res.status(500).json({ message: "Server error" });
+
+    try {
+      await Promise.all(results.map(t => sendEmail(t.email, subject, message)));
+      res.json({ message: "Notifications sent to all tenants" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Failed to send notifications" });
+    }
+  });
+});
+
+// Email sending function
+const sendEmail = async (to, subject, text) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER, // your email
+      pass: process.env.EMAIL_PASS, // app password
+    },
+  });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to,
+    subject,
+    text,
+  });
+};
+
+module.exports = router;
