@@ -6,7 +6,7 @@ const Register = () => {
     name: "",
     email: "",
     password: "",
-    role: "client"
+    role: "client" // default role
   });
 
   const [loading, setLoading] = useState(false);
@@ -14,16 +14,24 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // validate
     if (!form.name || !form.email || !form.password) {
-      alert("Please fill all fields.");
-      return;
+      return alert("Please fill all required fields.");
     }
 
     try {
       setLoading(true);
       const res = await API.post("/auth/register", form);
       alert(res.data.message);
-      setForm({ name: "", email: "", password: "", role: "client" });
+
+      // Reset form after success
+      setForm({
+        name: "",
+        email: "",
+        password: "",
+        role: "client"
+      });
+
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Registration failed");
@@ -35,34 +43,33 @@ const Register = () => {
   return (
     <div style={wrapperStyle}>
       <form onSubmit={handleSubmit} style={formStyle}>
+        {/* HOME ICON BACK BUTTON */}
+        <button
+          type="button"
+          onClick={() => (window.location.href = "/home")}
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            width: "40px",
+            marginBottom: "10px",
+          }}
+          title="Go to Home"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="#374151"
+            width="35px"
+            height="35px"
+          >
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          </svg>
+        </button>
 
-  {/* ✅ HOME ICON BACK BUTTON */}
-  <button
-    type="button"
-    onClick={() => (window.location.href = "/home")}
-    style={{
-      background: "transparent",
-      border: "none",
-      cursor: "pointer",
-      width: "40px",
-      marginBottom: "10px",
-    }}
-    title="Go to Home"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="#374151"
-      width="35px"
-      height="35px"
-    >
-      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-    </svg>
-  </button>
+        <h2 style={titleStyle}>Register</h2>
 
-  <h2 style={titleStyle}>Register</h2>
-
-
+        {/* NAME */}
         <input
           type="text"
           placeholder="Full Name"
@@ -72,6 +79,7 @@ const Register = () => {
           required
         />
 
+        {/* EMAIL */}
         <input
           type="email"
           placeholder="Email Address"
@@ -81,6 +89,7 @@ const Register = () => {
           required
         />
 
+        {/* PASSWORD */}
         <input
           type="password"
           placeholder="Password"
@@ -90,6 +99,7 @@ const Register = () => {
           required
         />
 
+        {/* ROLE */}
         <select
           value={form.role}
           onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -109,8 +119,8 @@ const Register = () => {
           }}
         >
           {loading ? "Please wait..." : "Register"}
-          </button>
-           {/* ✅ ADDED LOGIN REDIRECT (ONLY ADDITION) */}
+        </button>
+
         <p style={{ textAlign: "center", marginTop: "10px" }}>
           Already have an account?{" "}
           <a href="/" style={{ color: "#2563eb", fontWeight: "bold" }}>
@@ -128,14 +138,14 @@ const wrapperStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "#f3f4f6", // light gray
+  background: "#f3f4f6",
   padding: "20px",
 };
 
 const formStyle = {
   width: "100%",
   maxWidth: "420px",
-  background: "#ffffff", // white form
+  background: "#ffffff",
   padding: "30px",
   borderRadius: "16px",
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
@@ -146,16 +156,15 @@ const formStyle = {
 
 const titleStyle = {
   textAlign: "center",
-  color: "#1f2937", // dark gray
+  color: "#1f2937",
   marginBottom: "10px",
 };
 
 const inputStyle = {
   padding: "12px",
   borderRadius: "8px",
-  border: "1px solid #d1d5db", // gray border
+  border: "1px solid #d1d5db",
   fontSize: "15px",
-  outline: "none",
 };
 
 const selectStyle = {
@@ -164,7 +173,7 @@ const selectStyle = {
 };
 
 const buttonStyle = {
-  background: "#374151", // dark gray button
+  background: "#374151",
   color: "white",
   padding: "12px",
   border: "none",

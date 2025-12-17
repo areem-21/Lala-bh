@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import API from "../api";
 
 const ClientDashboard = () => {
-  const [tenant, setTenant] = useState(null);
+  const [user, setUser] = useState(null);
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
@@ -11,7 +11,7 @@ const ClientDashboard = () => {
       const res = await API.get("/client/dashboard", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setTenant(res.data.tenant);
+      setUser(res.data.user); // backend now returns { user: ... }
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Error fetching data");
@@ -32,7 +32,7 @@ const ClientDashboard = () => {
     fetchDashboard();
   }, [fetchDashboard, role]);
 
-  if (!tenant)
+  if (!user)
     return (
       <p style={{ textAlign: "center", marginTop: "50px" }}>Loading...</p>
     );
@@ -56,7 +56,7 @@ const ClientDashboard = () => {
         <h2
           style={{ textAlign: "center", fontWeight: "bold", color: "#f3f4f6" }}
         >
-          Tenant Panel
+          Client Panel
         </h2>
 
         <ul style={{ listStyle: "none", padding: 0, marginTop: "30px" }}>
@@ -66,10 +66,11 @@ const ClientDashboard = () => {
             </a>
           </li>
           <li style={{ marginBottom: "12px" }}>
-            <a href="/client/my-request" style={linkStyle}>
-              My Requests
-            </a>
-          </li>
+  <a href="/client/my-request" style={linkStyle}>
+    My Room Request
+  </a>
+</li>
+
           <li style={{ marginBottom: "12px" }}>
             <a href="/client/request-room" style={linkStyle}>
               Request Room
@@ -102,82 +103,33 @@ const ClientDashboard = () => {
 
       {/* Main Content */}
       <div style={{ padding: "20px", flexGrow: 1 }}>
-        <h1 style={{ color: "#1f2937" }}>Welcome, {tenant.tenant_name}</h1>
+        <h1 style={{ color: "#1f2937" }}>Welcome, {user.name}</h1>
 
-        {/* Room Details */}
-        {tenant.room_number ? (
-          <div
-            style={{
-              marginTop: "20px",
-              padding: "20px",
-              background: "white",
-              borderRadius: "12px",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
-            }}
-          >
-            <h2 style={{ color: "#1f2937" }}>My Room Details</h2>
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "20px",
+            background: "white",
+            borderRadius: "12px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
+          }}
+        >
+          <h2 style={{ color: "#1f2937" }}>My Account Details</h2>
 
-            <p>
-              <strong>Room Number:</strong> {tenant.room_number}
-            </p>
-            <p>
-              <strong>Type:</strong> {tenant.type}
-            </p>
-            <p>
-              <strong>Rate:</strong> ₱{tenant.rate}
-            </p>
-            <p>
-              <strong>Status:</strong> {tenant.status}
-            </p>
-
-            {/* Room Inclusions */}
-            <div
-              style={{
-                marginTop: "20px",
-                padding: "15px",
-                background: "#f9fafb",
-                borderRadius: "10px",
-                border: "1px solid #e5e7eb"
-              }}
-            >
-              <h3 style={{ marginBottom: "10px" }}>Room Inclusions</h3>
-              <ul style={{ marginLeft: "20px" }}>
-                <li>Free Electricity (Shared)</li>
-                <li>Free Water</li>
-                <li>Free Wi-Fi</li>
-                <li>Bed Space / Room Assignment</li>
-                <li>Use of Common CR & Kitchen</li>
-              </ul>
-            </div>
-
-            {/* Rules & Regulations */}
-            <div
-              style={{
-                marginTop: "20px",
-                padding: "15px",
-                background: "#fef2f2",
-                borderRadius: "10px",
-                border: "1px solid #fecaca"
-              }}
-            >
-              <h3 style={{ marginBottom: "10px", color: "#b91c1c" }}>
-                Boarding House Rules & Regulations
-              </h3>
-              <ul style={{ marginLeft: "20px" }}>
-                <li>No loud noise after 10 PM</li>
-                <li>No cooking inside the room</li>
-                <li>No bringing of visitors without permission</li>
-                <li>Maintain cleanliness in shared areas</li>
-                <li>Damages to property must be reported immediately</li>
-                <li>Late payments may result in penalties</li>
-              </ul>
-            </div>
-          </div>
-        ) : (
-          <p style={{ marginTop: "20px", color: "#4b5563" }}>
-            You currently have no room assigned.
+          <p>
+            <strong>Email:</strong> {user.email}
           </p>
-        )}
+          <p>
+            <strong>Role:</strong> {user.role}
+          </p>
+          <p>
+            <strong>Status:</strong> {user.status}
+          </p>
+          <p>
+            <strong>Created At:</strong>{" "}
+            {new Date(user.created_at).toLocaleString()}
+          </p>
+        </div>
       </div>
     </div>
   );

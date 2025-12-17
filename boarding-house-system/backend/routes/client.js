@@ -5,42 +5,38 @@ const jwt = require("jsonwebtoken");
 
 // Middleware to verify client token
 const verifyClient = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ message: "Unauthorized" });
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (decoded.role !== "client") return res.status(403).json({ message: "Forbidden" });
-        req.user = decoded;
-        next();
-    } catch (err) {
-        return res.status(401).json({ message: "Invalid token" });
-    }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret");
+    if (decoded.role !== "client") return res.status(403).json({ message: "Forbidden" });
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
 };
 
-router.get("/dashboard", verifyClient, (req, res) => {
+// GET /client/dashboard
+router.get("/dashboard", verifyClient, async (req, res) => {
+  try {
     const userId = req.user.id;
 
-    const query = `
-        SELECT u.name AS tenant_name, u.email AS tenant_email
-        FROM users u
-        WHERE u.id = ?
-        LIMIT 1
-    `;
+    const [rows] = await db.query(
+      `SELECT id, name, email, role, status, created_at FROM users WHERE id = ? LIMIT 1`,
+      [userId]
+    );
 
-    db.query(query, [userId], (err, results) => {
-        if (err) {
-            console.error("DB ERROR:", err);
-            return res.status(500).json({ message: "Internal server error" });
-        }
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-        if (results.length === 0) {
-            return res.json({ tenant: null });
-        }
-
-        res.json({ tenant: results[0] });
-    });
+    res.json({ user: rows[0] }); // frontend expects { user: ... }
+  } catch (err) {
+    console.error("DASHBOARD ERROR:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
-
 
 module.exports = router;

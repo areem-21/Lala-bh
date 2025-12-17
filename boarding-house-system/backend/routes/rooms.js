@@ -45,46 +45,61 @@ router.post("/add", verifyAdmin, (req, res) => {
 // ------------------------------------------------------
 // 🔹 ASSIGN TENANT TO ROOM (matches UI: /rooms/assign)
 // ------------------------------------------------------
-router.post("/assign", verifyAdmin, (req, res) => {
-  const { tenant_id, room_id } = req.body;
+// 🔹 ASSIGN TENANT TO ROOM (matches UI: /rooms/assign)
+router.post("/assign", verifyAdmin, async (req, res) => {
+  try {
+    const { tenant_id, room_id } = req.body;
 
-  if (!tenant_id || !room_id) {
-    return res.status(400).json({ message: "Tenant ID and Room ID required" });
-  }
+    if (!tenant_id || !room_id) {
+      return res.status(400).json({ message: "Tenant ID and Room ID required" });
+    }
 
-  // Check if room exists & get capacity
-  const checkRoom = `
-      SELECT capacity,
-             (SELECT COUNT(*) FROM tenants WHERE room_id = ?) AS occupied
-      FROM rooms
-      WHERE id = ?
-  `;
+    // 1. Check if room exists & get capacity + occupancy
+    const [roomRows] = await db.query(
+      `SELECT id, capacity, current_occupancy, available_slots, status
+       FROM rooms
+       WHERE id = ?`,
+      [room_id]
+    );
 
-  db.query(checkRoom, [room_id, room_id], (err, roomRows) => {
-    if (err) return res.status(500).json({ message: err.message });
-    if (!roomRows.length) return res.status(404).json({ message: "Room not found" });
+    if (!roomRows.length) {
+      return res.status(404).json({ message: "Room not found" });
+    }
 
-    const { capacity, occupied } = roomRows[0];
+    const room = roomRows[0];
 
-    if (occupied >= capacity) {
+    if (room.current_occupancy >= room.capacity) {
       return res.status(400).json({ message: "Room is already full" });
     }
 
-    // Assign tenant to this room
-    const sql = `UPDATE tenants SET room_id = ? WHERE id = ?`;
+    // 2. Assign tenant to this room
+    await db.query(`UPDATE tenants SET room_id = ?, status = 'approved' WHERE id = ?`, [
+      room_id,
+      tenant_id,
+    ]);
 
-    db.query(sql, [room_id, tenant_id], (err2, result2) => {
-      if (err2) return res.status(500).json({ message: err2.message });
+    // 3. Update room occupancy
+    await db.query(
+      `UPDATE rooms 
+       SET current_occupancy = current_occupancy + 1,
+           available_slots = capacity - current_occupancy - 1,
+           status = CASE WHEN capacity - current_occupancy - 1 <= 0 THEN 'occupied' ELSE 'available' END
+       WHERE id = ?`,
+      [room_id]
+    );
 
-      return res.json({ message: "Tenant assigned successfully" });
-    });
-  });
+    return res.json({ message: "Tenant assigned successfully", room_id, tenant_id });
+  } catch (err) {
+    console.error("ASSIGN ROOM ERROR:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 });
+
 
 // ------------------------------------------------------
 // 🔹 GET ROOMS + OCCUPANCY
 // ------------------------------------------------------
-router.get("/list", (req, res) => {
+router.get("/list", async (req, res) => {
   const sql = `
     SELECT 
       r.id,
@@ -92,17 +107,24 @@ router.get("/list", (req, res) => {
       r.type,
       r.rate,
       r.capacity,
-      r.status,
-      (SELECT COUNT(*) FROM tenants WHERE room_id = r.id) AS occupied_count
+      (SELECT COUNT(*) FROM tenants WHERE room_id = r.id AND status != 'rejected') AS occupied_count,
+      CASE 
+        WHEN (SELECT COUNT(*) FROM tenants WHERE room_id = r.id AND status != 'rejected') >= r.capacity 
+        THEN 'Full'
+        ELSE 'Available'
+      END AS availability
     FROM rooms r
     ORDER BY r.room_number ASC
   `;
-
-  db.query(sql, (err, rows) => {
-    if (err) return res.status(500).json({ message: "Internal server error" });
-
-    res.json(rows);
-  });
+  try {
+    const [rows] = await db.query(sql);
+    return res.json(rows);
+  } catch (err) {
+    console.error("Rooms list DB error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 });
+
+
 
 module.exports = router;

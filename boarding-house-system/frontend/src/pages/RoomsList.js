@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 const RoomsList = () => {
   const [rooms, setRooms] = useState([]);
+  const [tenants, setTenants] = useState([]);
 
   const [newRoom, setNewRoom] = useState({
     room_number: "",
@@ -19,6 +20,7 @@ const RoomsList = () => {
 
   useEffect(() => {
     fetchRooms();
+    fetchTenants();
   }, []);
 
   const fetchRooms = async () => {
@@ -31,6 +33,19 @@ const RoomsList = () => {
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Error fetching rooms");
+    }
+  };
+
+  const fetchTenants = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await API.get("/tenants/list-basic", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTenants(res.data);
+    } catch (err) {
+      console.error(err);
+      alert("Error fetching tenants");
     }
   };
 
@@ -59,7 +74,7 @@ const RoomsList = () => {
     const token = localStorage.getItem("token");
 
     if (!assign.tenant_id || !assign.room_id) {
-      return alert("Please enter tenant ID and room ID");
+      return alert("Please select tenant and room");
     }
 
     try {
@@ -84,26 +99,23 @@ const RoomsList = () => {
         </Link>
       </div>
 
-      <h2 style={styles.title}>Rooms List</h2>
+      <h2 style={styles.title}>Rooms Management</h2>
 
       {/* ADD ROOM FORM */}
       <div style={styles.card}>
         <h3>Add Room</h3>
-
         <input
           placeholder="Room Number"
           value={newRoom.room_number}
           onChange={(e) => setNewRoom({ ...newRoom, room_number: e.target.value })}
           style={styles.input}
         />
-
         <input
           placeholder="Type (e.g., Bedspace)"
           value={newRoom.type}
           onChange={(e) => setNewRoom({ ...newRoom, type: e.target.value })}
           style={styles.input}
         />
-
         <input
           placeholder="Rate"
           type="number"
@@ -111,7 +123,6 @@ const RoomsList = () => {
           onChange={(e) => setNewRoom({ ...newRoom, rate: e.target.value })}
           style={styles.input}
         />
-
         <input
           placeholder="Capacity"
           type="number"
@@ -119,38 +130,10 @@ const RoomsList = () => {
           onChange={(e) => setNewRoom({ ...newRoom, capacity: e.target.value })}
           style={styles.input}
         />
-
         <button style={styles.btn} onClick={handleAddRoom}>Add Room</button>
       </div>
 
-      {/* ASSIGN TENANT FORM */}
-      <div style={styles.card}>
-        <h3>Assign Tenant to Room</h3>
-
-        <input
-          placeholder="Tenant ID"
-          value={assign.tenant_id}
-          onChange={(e) => setAssign({ ...assign, tenant_id: e.target.value })}
-          style={styles.input}
-        />
-
-        <select
-          style={styles.input}
-          value={assign.room_id}
-          onChange={(e) => setAssign({ ...assign, room_id: e.target.value })}
-        >
-          <option value="">Select Room</option>
-          {rooms.map((room) => (
-            <option key={room.id} value={room.id}>
-              Room {room.room_number}
-            </option>
-          ))}
-        </select>
-
-        <button style={styles.btn} onClick={handleAssignRoom}>
-          Assign
-        </button>
-      </div>
+    
 
       {/* ROOMS TABLE */}
       <div style={styles.tableWrapper}>
@@ -166,31 +149,27 @@ const RoomsList = () => {
               <th style={styles.th}>Status</th>
             </tr>
           </thead>
-
           <tbody>
             {rooms.map((room) => {
               const available = room.capacity - room.occupied_count;
-
               return (
                 <tr key={room.id}>
-                  <td style={styles.td}>{room.room_number}</td>
-                  <td style={styles.td}>{room.type}</td>
-                  <td style={styles.td}>₱{room.rate}</td>
-                  <td style={styles.td}>{room.capacity}</td>
-                  <td style={styles.td}>{room.occupied_count}</td>
-
-                  {/* ❗ Fixed duplicate style error here */}
+                  <td style={{...styles.td, border: '1px solid #e5e7eb'}}>{room.room_number}</td>
+                  <td style={{...styles.td, border: '1px solid #e5e7eb'}}>{room.type}</td>
+                  <td style={{...styles.td, border: '1px solid #e5e7eb'}}>₱{room.rate}</td>
+                  <td style={{...styles.td, border: '1px solid #e5e7eb'}}>{room.capacity}</td>
+                  <td style={{...styles.td, border: '1px solid #e5e7eb'}}>{room.occupied_count}</td>
                   <td
                     style={{
                       ...styles.td,
+                      border: '1px solid #e5e7eb',
                       fontWeight: "bold",
                       color: available <= 0 ? "red" : "green",
                     }}
                   >
                     {available}
                   </td>
-
-                  <td style={styles.td}>{available <= 0 ? "Full" : "Available"}</td>
+                  <td style={{...styles.td, border: '1px solid #e5e7eb'}}>{available <= 0 ? "Full" : "Available"}</td>
                 </tr>
               );
             })}

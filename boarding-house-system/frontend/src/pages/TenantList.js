@@ -110,25 +110,25 @@ const AdminTenant = () => {
 
       <div style={styles.tableWrapper}>
         <table style={styles.table}>
-          <thead>
+          <thead style={styles.thead}>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Room</th>
-              <th>Status</th>
-              <th>Created At</th>
+              <th style={styles.th}>Name</th>
+              <th style={styles.th}>Email</th>
+              <th style={styles.th}>Phone</th>
+              <th style={styles.th}>Room</th>
+              <th style={styles.th}>Status</th>
+              <th style={styles.th}>Created At</th>
             </tr>
           </thead>
           <tbody>
             {tenants.map(t => (
-              <tr key={t.id}>
-                <td>{t.full_name}</td>
-                <td>{t.email}</td>
-                <td>{t.phone}</td>
-                <td>{t.room_number ? `${t.room_number} (${t.type})` : "Not Assigned"}</td>
-                <td>{t.status}</td>
-                <td>{new Date(t.created_at).toLocaleDateString()}</td>
+              <tr key={t.id} style={styles.tr}>
+                <td style={styles.td}>{t.full_name}</td>
+                <td style={styles.td}>{t.email}</td>
+                <td style={styles.td}>{t.phone}</td>
+                <td style={styles.td}>{t.room_number ? `${t.room_number} (${t.type})` : "Not Assigned"}</td>
+                <td style={styles.td}>{t.status}</td>
+                <td style={styles.td}>{new Date(t.created_at).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>
@@ -202,7 +202,15 @@ const styles = {
     background: "white",
     borderRadius: "12px",
     overflow: "hidden",
+    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    border: '1px solid #e5e7eb'
   },
+  thead: { background: '#f8fafc' },
+  th: { textAlign: 'left', padding: '12px 16px', border: '1px solid #e5e7eb', background: '#f8fafc', color: '#374151' },
+  td: { padding: '12px 16px', border: '1px solid #e5e7eb', color: '#111827' },
+  tr: { background: '#fff' },
+  primaryButton: { padding: '10px 14px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' },
+  exportSmall: { padding: '8px 10px', background: '#111827', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' },
 };
 
 export default AdminTenant;

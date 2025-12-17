@@ -26,7 +26,7 @@ const RequestRoom = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // ✅ FIXED: backend returns rooms inside "rooms"
+       
         setRooms(res.data);
       } catch (err) {
         console.error(err);
@@ -137,19 +137,20 @@ const RequestRoom = () => {
               required
             />
 
-            {/* NO MODIFICATION TO DROPDOWN CONTENT */}
-            <select
-              value={form.room_id}
-              onChange={(e) => setForm({ ...form, room_id: e.target.value })}
-              style={styles.select}
-            >
-              <option value="">Select Room (optional)</option>
-              {rooms.map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.room_number} - {room.type} - {room.status}
-                </option>
-              ))}
-            </select>
+           <select
+  value={form.room_id}
+  onChange={(e) => setForm({ ...form, room_id: e.target.value })}
+  style={styles.select}
+>
+  <option value="">Select Room</option>
+  {rooms.map((room) => (
+    <option key={room.id} value={room.id} disabled={room.availability === "Full"}>
+      {room.room_number} - {room.type} - ₱{room.rate} ({room.availability})
+    </option>
+  ))}
+</select>
+
+
 
             <button type="submit" style={styles.button}>Request Room</button>
           </form>
